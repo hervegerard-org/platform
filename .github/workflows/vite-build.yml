@@ -1,0 +1,68 @@
+# Reusable: production Vite build + optional htaccess copy + upload dist artifact.
+name: vite-build
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: Directory containing package.json
+        type: string
+        default: "."
+      node-version-file:
+        type: string
+        default: ".nvmrc"
+      cache-dependency-path:
+        type: string
+        default: "package-lock.json"
+      dist-dir:
+        description: Build output directory (repo-relative or under working-directory)
+        type: string
+        default: "dist"
+      htaccess-src:
+        description: Optional source file to copy as dist/.htaccess (empty = skip)
+        type: string
+        default: ""
+      artifact-name:
+        description: Artifact name for downstream deploy-ovh-ftp
+        type: string
+        default: "vite-dist"
+    secrets:
+      VITE_SUPABASE_URL:
+        required: true
+      VITE_SUPABASE_ANON_KEY:
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: ${{ inputs.node-version-file }}
+          cache: npm
+          cache-dependency-path: ${{ inputs.cache-dependency-path }}
+
+      - name: Install & build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          npm ci
+          npm run build
+
+      - name: Copy htaccess
+        if: inputs.htaccess-src != ''
+        working-directory: ${{ inputs.working-directory }}
+        run: cp "${{ inputs.htaccess-src }}" "${{ inputs.dist-dir }}/.htaccess"
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: ${{ inputs.working-directory }}/${{ inputs.dist-dir }}
+          if-no-files-found: error

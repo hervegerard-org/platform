@@ -1,0 +1,60 @@
+# Reusable: pg_dump (schema + data) via postgres:17-alpine + upload artifact.
+name: supabase-db-dump
+
+on:
+  workflow_call:
+    inputs:
+      schema:
+        description: Postgres schema to dump
+        type: string
+        default: "public"
+      retention-days:
+        description: Artifact retention days
+        type: string
+        default: "90"
+      dump-subdir:
+        description: Directory under db-dumps/ for the file
+        type: string
+        default: "PRODUCTION"
+    secrets:
+      SUPABASE_DB_PASSWORD:
+        required: true
+      SUPABASE_PROJECT_REF:
+        required: true
+      SUPABASE_DB_HOST:
+        required: true
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      SUPABASE_DB_HOST: ${{ secrets.SUPABASE_DB_HOST }}
+    steps:
+      - name: Full dump (schema + data)
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_DB_HOST:-}" ]; then
+            echo "Erreur : secret SUPABASE_DB_HOST manquant (ex. aws-1-eu-west-2.pooler.supabase.com)."
+            exit 1
+          fi
+          ENCODED_PASSWORD="$(python3 -c "import urllib.parse, os; print(urllib.parse.quote(os.environ['SUPABASE_DB_PASSWORD'], safe=''))")"
+          DB_URL="postgresql://postgres.${SUPABASE_PROJECT_REF}:${ENCODED_PASSWORD}@${SUPABASE_DB_HOST}:5432/postgres"
+
+          mkdir -p "db-dumps/${{ inputs.dump-subdir }}"
+          TS=$(date -u +%Y-%m-%d_%H%M%S)
+          DUMP_FILE="db-dumps/${{ inputs.dump-subdir }}/dump-${TS}.sql.gz"
+
+          docker run --rm -e PGCONNECT="$DB_URL" postgres:17-alpine \
+            sh -c "pg_dump \"\$PGCONNECT\" --schema=${{ inputs.schema }} --no-owner --no-privileges | gzip" \
+            > "$DUMP_FILE"
+
+          echo "DUMP_FILE=$DUMP_FILE" >> "$GITHUB_ENV"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-dump-${{ github.run_id }}
+          path: ${{ env.DUMP_FILE }}
+          retention-days: ${{ fromJSON(inputs.retention-days) }}

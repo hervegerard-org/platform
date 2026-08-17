@@ -1,0 +1,64 @@
+# Reusable: npm ci + optional lint / test / build (PR-friendly Vite placeholders).
+name: node-ci
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: Directory containing package.json
+        type: string
+        default: "."
+      node-version-file:
+        description: Path to .nvmrc (relative to repo root)
+        type: string
+        default: ".nvmrc"
+      cache-dependency-path:
+        description: package-lock.json path for npm cache
+        type: string
+        default: "package-lock.json"
+      run-lint:
+        type: boolean
+        default: true
+      run-test:
+        type: boolean
+        default: true
+      run-build:
+        type: boolean
+        default: true
+    secrets:
+      VITE_SUPABASE_URL:
+        required: false
+      VITE_SUPABASE_ANON_KEY:
+        required: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: ${{ inputs.node-version-file }}
+          cache: npm
+          cache-dependency-path: ${{ inputs.cache-dependency-path }}
+
+      - run: npm ci
+
+      - name: Lint
+        if: inputs.run-lint
+        run: npm run lint
+
+      - name: Test
+        if: inputs.run-test
+        run: npm test
+
+      - name: Build
+        if: inputs.run-build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://placeholder.supabase.co' }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'placeholder-anon-key' }}
+        run: npm run build

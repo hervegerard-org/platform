@@ -1,0 +1,56 @@
+# Reusable: OVH FTP upload (SamKirkland). Prefer downloading a vite-build artifact.
+name: deploy-ovh-ftp
+
+on:
+  workflow_call:
+    inputs:
+      local-dir:
+        description: Local directory to upload (must end with / for SamKirkland)
+        type: string
+        default: "./dist/"
+      server-dir:
+        description: Remote OVH directory (e.g. /www/stages/)
+        type: string
+        required: true
+      use-artifact:
+        description: Download artifact from vite-build before upload
+        type: boolean
+        default: true
+      artifact-name:
+        type: string
+        default: "vite-dist"
+      artifact-download-path:
+        description: Where to extract the artifact (should match local-dir without trailing quirks)
+        type: string
+        default: "dist"
+    secrets:
+      FTP_SERVER:
+        required: true
+      FTP_USERNAME:
+        required: true
+      FTP_PASSWORD:
+        required: true
+
+jobs:
+  ftp:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download dist artifact
+        if: inputs.use-artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: ${{ inputs.artifact-download-path }}
+
+      - name: Checkout (no artifact)
+        if: ${{ !inputs.use-artifact }}
+        uses: actions/checkout@v5
+
+      - name: Upload FTP (OVH)
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ${{ inputs.local-dir }}
+          server-dir: ${{ inputs.server-dir }}

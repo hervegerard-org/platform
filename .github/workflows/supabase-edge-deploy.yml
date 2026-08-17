@@ -1,0 +1,48 @@
+# Reusable: deploy Supabase Edge Functions (CSV list).
+name: supabase-edge-deploy
+
+on:
+  workflow_call:
+    inputs:
+      functions:
+        description: Comma-separated function names (e.g. invite-admin or invite-user,delete-user)
+        type: string
+        required: true
+      working-directory:
+        description: Repo subdirectory containing supabase/ (default repo root)
+        type: string
+        default: "."
+    secrets:
+      SUPABASE_ACCESS_TOKEN:
+        required: true
+      SUPABASE_PROJECT_REF:
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: supabase/setup-cli@v3
+        with:
+          version: latest
+
+      - name: Deploy edge functions
+        run: |
+          set -euo pipefail
+          IFS=',' read -ra FUNCS <<< "${{ inputs.functions }}"
+          for fn in "${FUNCS[@]}"; do
+            name="$(echo "$fn" | xargs)"
+            if [ -z "$name" ]; then
+              continue
+            fi
+            echo "Deploying function: $name"
+            supabase functions deploy "$name" --project-ref "$SUPABASE_PROJECT_REF"
+          done
