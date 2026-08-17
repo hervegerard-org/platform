@@ -66,3 +66,4 @@ jobs:
           name: ${{ inputs.artifact-name }}
           path: ${{ inputs.working-directory }}/${{ inputs.dist-dir }}
           if-no-files-found: error
+          include-hidden-files: true
