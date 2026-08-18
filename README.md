@@ -20,7 +20,7 @@ This repo holds **no secrets**. Callers pass secrets and project-specific inputs
 | [`supabase-edge-deploy.yml`](.github/workflows/supabase-edge-deploy.yml) | Deploy one or more Edge Functions |
 | [`supabase-db-dump.yml`](.github/workflows/supabase-db-dump.yml) | `pg_dump` artifact |
 
-Pins (v1): `actions/checkout@v5`, `actions/setup-node@v5`, `supabase/setup-cli@v3`, `SamKirkland/FTP-Deploy-Action@v4.4.0`, `actions/upload-artifact@v4`.
+Pins (v1): `actions/checkout@v5`, `actions/setup-node@v5`, `supabase/setup-cli@v3`, `SamKirkland/FTP-Deploy-Action@v4.4.0`, `actions/upload-artifact@v7`, `actions/download-artifact@v8`.
 
 ## Example caller
 

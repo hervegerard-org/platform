@@ -53,7 +53,7 @@ jobs:
           echo "DUMP_FILE=$DUMP_FILE" >> "$GITHUB_ENV"
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: db-dump-${{ github.run_id }}
           path: ${{ env.DUMP_FILE }}

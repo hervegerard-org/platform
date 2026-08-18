@@ -61,7 +61,7 @@ jobs:
         run: cp "${{ inputs.htaccess-src }}" "${{ inputs.dist-dir }}/.htaccess"
 
       - name: Upload dist artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.artifact-name }}
           path: ${{ inputs.working-directory }}/${{ inputs.dist-dir }}
