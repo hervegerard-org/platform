@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Workspaces Cursor — hervegerard-org</title>
+    <style>
+      :root {
+        --bg: #141414;
+        --surface: #1c1c1c;
+        --border: #2e2e2e;
+        --text: #e8e8e8;
+        --muted: #8a8a8a;
+        --accent: #4d8eff;
+        --accent-text: #0b0b0b;
+        --green: #3d9a6a;
+        --blue: #4d8eff;
+        --yellow: #c4a035;
+        --red: #c45454;
+        --hub: #9a9a9a;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      main {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 40px 24px 64px;
+      }
+      h1 {
+        font-size: 24px;
+        font-weight: 600;
+        margin: 0 0 8px;
+      }
+      .lede {
+        color: var(--muted);
+        margin: 0 0 32px;
+        max-width: 62ch;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+      @media (max-width: 760px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      article {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        padding: 16px 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-height: 220px;
+      }
+      .pill {
+        display: inline-block;
+        font-size: 11px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--muted);
+        border: 1px solid var(--border);
+        padding: 2px 8px;
+        width: fit-content;
+      }
+      .pill.hub {
+        color: var(--hub);
+      }
+      .pill.modern {
+        color: var(--green);
+      }
+      .pill.complex {
+        color: var(--blue);
+      }
+      .pill.debt {
+        color: var(--yellow);
+      }
+      .pill.outlier {
+        color: var(--red);
+      }
+      h2 {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 0;
+      }
+      .purpose {
+        margin: 0;
+        flex: 1;
+      }
+      .path {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        word-break: break-all;
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+      a.btn,
+      button.btn {
+        appearance: none;
+        border: 1px solid var(--border);
+        background: transparent;
+        color: var(--text);
+        font: inherit;
+        font-size: 13px;
+        padding: 6px 12px;
+        text-decoration: none;
+        cursor: pointer;
+      }
+      a.btn.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: var(--accent-text);
+      }
+      a.btn:hover,
+      button.btn:hover {
+        border-color: var(--text);
+      }
+      a.btn.primary:hover {
+        filter: brightness(1.08);
+      }
+      footer {
+        margin-top: 28px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      footer a {
+        color: var(--accent);
+      }
+      .scaffold {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        padding: 16px 18px;
+        margin: 0 0 28px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .scaffold h2 {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 0;
+      }
+      .scaffold p {
+        margin: 0;
+        color: var(--muted);
+        max-width: 72ch;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Workspaces Cursor</h1>
+      <p class="lede">
+        Ouvre chaque projet dans une nouvelle fenêtre Cursor. Bookmark cette
+        page (
+        <span class="path">file:///Users/Herve/Development_Local/Platform/home.html</span>
+        ). Le premier clic peut demander d’autoriser Cursor.
+      </p>
+      <section class="scaffold" id="nouveau-projet">
+        <span class="pill hub">Wizard</span>
+        <h2>Nouveau projet</h2>
+        <p>
+          Copier le prompt, l’ouvrir dans un workspace vide (pas Platform),
+          coller dans Agent. L’agent pose les questions (React simple / React
+          app / React + Supabase / + Edge) puis scaffold sur la stack famille.
+          Ou dire « scaffold » si le skill perso scaffold-hervegerard est actif.
+        </p>
+        <div class="actions">
+          <button type="button" class="btn primary" id="copy-scaffold">
+            Copier le prompt wizard
+          </button>
+          <a class="btn" href="docs/scaffold.md">docs/scaffold.md</a>
+        </div>
+      </section>
+      <div class="grid" id="grid"></div>
+      <footer>
+        7 projets · inventaire stack dans
+        <a href="canvases/stack-comparison.canvas.tsx">stack-comparison.canvas.tsx</a>
+        (ouvrir le workspace Platform dans Cursor) ·
+        <a href="#nouveau-projet">prompt wizard nouveau projet</a>.
+      </footer>
+    </main>
+    <script>
+      const TARGET_STACK =
+        "Node 24 Active LTS · React 19 · Vite 8 · TypeScript 6 · Tailwind 4 · React Router 7 · TanStack Query 5 · RHF + zod 4 · Vitest";
+
+      const NODE_TARGET =
+        '`.nvmrc` = `24.22.1` · `"engines": { "node": ">=24.22.1 <25" }` · CI via platform node-version-file `.nvmrc`';
+
+      const PLATFORM_REPO = "hervegerard-org/platform";
+      const PLATFORM_PIN = "@v1";
+
+      const PLATFORM_WORKFLOWS = `Workflows ${PLATFORM_REPO}${PLATFORM_PIN} (private, callers = org hervegerard-org) :
+- node-ci.yml — npm ci + lint?/test?/build (placeholders Vite OK)
+- vite-build.yml — build prod + htaccess-src optionnel + artifact vite-dist
+- deploy-ovh-ftp.yml — SamKirkland FTP@v4.4.0 ; use-artifact true ; artifact-name vite-dist
+- supabase-db-push.yml — db push --db-url (SUPABASE_DB_HOST + password URL-encode)
+- supabase-edge-deploy.yml — functions CSV
+- supabase-db-dump.yml — pg_dump artifact
+Secrets platform : FTP_SERVER / FTP_USERNAME / FTP_PASSWORD ; VITE_* ; SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_REF, SUPABASE_DB_PASSWORD, SUPABASE_DB_HOST.
+Mapper dans le caller si le repo a d’autres noms (OVH_FTP_*, FTP_HOST, SUPABASE_PROJECT_ID).
+Dotfiles : upload-artifact doit inclure .htaccess (include-hidden-files). Si le FTP sync supprime .htaccess, c’est un bug platform — ne pas recoller le copy dans le caller.
+jobs.*.uses au niveau job (pas comme step). Pin ${PLATFORM_PIN}, jamais @main.`;
+
+      const TRANSFER_ORG = `Transfert GitHub vers hervegerard-org (requis : platform privée).
+\`gh repo transfer\` n’existe pas. Utiliser :
+  gh api -X POST repos/<owner>/<repo>/transfer -f new_owner=hervegerard-org
+Puis : git remote set-url origin https://github.com/hervegerard-org/<repo>.git
+Ne pas recréer le repo ; secrets + environments suivent. Si le transfer échoue, STOP.`;
+
+      const FORMS_STANDARD = `Standard forms (famille) :
+- Formulaires métier (login, CRUD, settings) : React Hook Form + zod 4 + @hookform/resolvers (zodResolver).
+- API Zod 4 : z.email() / z.uuid() (pas z.string().email()).
+- Mini-forms 1 champ : useState + HTML required OK.
+- Interdit : laisser zod, react-hook-form, @hookform/resolvers ou components/ui/form.tsx morts — brancher ou retirer.
+- shadcn Form : seulement si déjà vivant (raf-ferme). Sinon pattern Ebrius : register() + Label/Input.
+- Ne pas migrer en masse les gros useState (atelier ComponentForm / ProjectForm, caisse artiTemps) dans le même chantier que le bump stack.
+Référence : raf-ferme (schémas centralisés) ou Ebrius (léger). Pas Lovable form.tsx mort.`;
+
+      const SCAFFOLD_PROMPT = `Scaffold une nouvelle app dans ce workspace, base famille hervegerard-org. Suis le wizard. N’écris aucun fichier tant que les questions applicables n’ont pas de réponse.
+
+Si ce repo est hervegerard-org/platform (hub Actions, pas d’app Vite), STOP. Dis d’ouvrir le workspace du nouveau projet et de coller ce prompt là.
+
+## Cible fixe (ne pas demander)
+
+- Node 24 : \`.nvmrc\` = \`24.22.1\` · \`"engines": { "node": ">=24.22.1 <25" }\`
+- React 19 · Vite 8 · TypeScript 6 · Tailwind 4 · React Router 7 · Vitest
+- Pin **majors** seulement (dernier matching), pas de patches figés
+- Org GitHub : hervegerard-org
+- CI : \`hervegerard-org/platform/.github/workflows/<file>.yml@v1\` — \`jobs.*.uses\` au niveau job, pin \`@v1\`, jamais \`@main\`
+- Pas de secrets dans les fichiers · commits seulement si demandé
+- Hors scope : Desize / atelier-int / PHP (artiTemps)
+
+Références : raf-ferme = SPA plat + Supabase + CI. Ebrius = forms \`register()\` + \`z.email()\`.
+
+## Wizard
+
+AskQuestion si dispo, sinon questions conversationnelles. Skip question 5 si pas de Supabase. Proposer \`apps/web\` seulement si le profil inclut Supabase.
+
+### 1. Identité
+
+Nom (kebab-case), purpose (une phrase), chemin local si ce n’est pas déjà ce workspace.
+
+### 2. Profil
+
+- **React simple** — pages + Router + Tailwind. Pas de RHF, pas de zod, pas de TanStack Query. Pas de \`form.tsx\` mort.
+- **React app** — + TanStack Query 5 + RHF + zod 4 (\`zodResolver\`, API Zod 4 \`z.email()\` / \`z.uuid()\`). UI Radix/shadcn-style. Pattern Ebrius : \`register()\` + Label/Input. **Pas** shadcn Form.
+- **React + Supabase** — comme React app + \`@supabase/supabase-js\`, dossier \`supabase/\` (une migration minimale), \`types:gen\`, client typé.
+- **React + Supabase + Edge** — précédent + une Edge Function stub \`health\`.
+
+Inférences : simple → Tailwind seul, pas de Query. React app / Supabase → Query + forms Ebrius. Pas de Supabase → pas de jobs \`supabase-*\`.
+
+### 3. Packaging
+
+- SPA plat à la racine (défaut, raf-ferme)
+- \`apps/web\` + \`supabase/\` (style Ebrius) — seulement si profil Supabase / Edge
+
+### 4. CI / hébergement
+
+- **node-ci seul** (PR + push)
+- **Chaîne FTP** : \`node-ci\` → (\`db-push\` / \`edge\` si Supabase / Edge) → \`vite-build\` → \`deploy-ovh-ftp\`. Demander \`server-dir\` (ex. \`/www/<app>/\`). \`use-artifact: true\`, \`artifact-name: vite-dist\`. Triggers (\`on:\`) restent dans le caller.
+
+### 5. Auth (Supabase seulement)
+
+- Pas encore
+- Email/password stub (login + session)
+
+### 6. GitHub
+
+- Créer maintenant : \`gh repo create hervegerard-org/<name> --private --source=.\`
+- Plus tard : documenter cette commande dans le README
+
+### 7. Extras (multi, défauts off)
+
+- PWA (\`vite-plugin-pwa\`)
+- \`.htaccess\` SPA : \`public/.htaccess.ovh\` + \`htaccess-src\` sur \`vite-build\`
+- i18n (i18next)
+
+## Safety
+
+- STOP si une vraie app existe déjà (\`package.json\` react/vite, ou \`src/\` avec routes) sauf overlay explicite.
+- Jamais écrire tokens FTP, clés service Supabase, mots de passe DB, ou anon keys live. \`.env.example\` = noms seulement.
+- Ne pas \`gh repo transfer\`. Créer les repos **dans** hervegerard-org.
+- Ne pas patcher les workflows de platform depuis un scaffold.
+
+## Générer ensuite
+
+1. Vite React-TS dans le layout choisi.
+2. \`.nvmrc\`, \`engines\`, ESLint, Vitest smoke (un test qui monte l’app).
+3. Scripts : \`dev\` / \`build\` / \`lint\` / \`test\` ; \`types:gen\` si Supabase.
+4. React Router 7, route home (et login si auth stub).
+5. Selon profil :
+   - React app / Supabase : Query client ; au moins un form branché (ou login) avec \`zodResolver\`.
+   - Supabase : client typé, \`.env.example\` (\`VITE_SUPABASE_URL\`, \`VITE_SUPABASE_ANON_KEY\`), \`supabase init\` + première migration, script \`types:gen\`.
+   - Edge : \`supabase/functions/health/index.ts\` qui répond 200.
+6. Si extra htaccess : rewrite SPA Apache dans \`public/.htaccess.ovh\`.
+7. Wrapper CI mince \`.github/workflows/ci.yml\` (modèles ci-dessous). Adapter \`working-directory\` / \`cache-dependency-path\` si \`apps/web\`.
+8. README : comment lancer ; noms des secrets GitHub ; \`gh repo create\` si reporté.
+
+### Contrainte vite-build platform
+
+\`vite-build.yml@v1\` **exige** VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY même sans Supabase. Si profil React simple/app **et** FTP : créer ces secrets GitHub en placeholder (\`https://placeholder.supabase.co\`, \`placeholder-anon-key\`) et les passer dans le caller. \`node-ci\` substitue déjà des placeholders si vides. Ne pas patcher platform.
+
+### CI — node-ci seul
+
+name: CI
+on: push/PR vers main|master
+jobs.check uses hervegerard-org/platform/.github/workflows/node-ci.yml@v1
+  with: run-lint/test/build true
+  secrets: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
+
+### CI — chaîne complète (Supabase + FTP)
+
+Triggers dans le caller. Jobs deploy seulement sur push main/master.
+Ordre : check (node-ci) → db-push (supabase-db-push.yml@v1) si Supabase → edge (supabase-edge-deploy.yml@v1, functions: health) si Edge → build (vite-build.yml@v1, htaccess-src: public/.htaccess.ovh si extra) → ftp (deploy-ovh-ftp.yml@v1).
+ftp : local-dir ./dist/ ; server-dir /www/<app>/ ; use-artifact true ; artifact-name vite-dist ; artifact-download-path dist
+Secrets FTP_SERVER / FTP_USERNAME / FTP_PASSWORD.
+vite-build upload l’artifact vite-dist ; deploy-ovh-ftp le télécharge. Si apps/web : working-directory apps/web sur node-ci et vite-build.
+
+Secrets à nommer dans le README (ne pas inventer les valeurs) :
+- FTP : FTP_SERVER, FTP_USERNAME, FTP_PASSWORD
+- vite-build : VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY (placeholders si pas de Supabase)
+- Supabase : SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_REF, SUPABASE_DB_PASSWORD, SUPABASE_DB_HOST
+
+### Forms (React app / Supabase)
+
+- Métier : React Hook Form + zod 4 + @hookform/resolvers (zodResolver)
+- API Zod 4 : z.email() / z.uuid() (pas z.string().email())
+- Mini-forms 1 champ : useState + HTML required OK
+- Interdit : laisser zod, react-hook-form, @hookform/resolvers ou components/ui/form.tsx morts — brancher ou ne pas installer
+- Apps nouvelles : pattern Ebrius (register() + Label/Input), pas shadcn Form
+
+## Fin
+
+- npm run build et npm test verts sous Node 24
+- Pas de deps forms mortes
+- README liste les secrets et gh repo create si reporté
+- Résumer le profil choisi + fichiers créés. Ne pas committer sauf demande.`;
+
+      const CLUSTER_LABEL = {
+        hub: "CI partagée",
+        modern: "Stack moderne",
+        complex: "Moderne + complexité",
+        debt: "Dette relative",
+        outlier: "Outlier",
+      };
+
+      const PROJECTS = [
+        {
+          id: "platform",
+          name: "Platform",
+          purpose:
+            "Workflows GitHub Actions réutilisables pour la famille d’apps (Vite / React / Supabase → OVH FTP).",
+          path: "/Users/Herve/Development_Local/Platform",
+          cluster: "hub",
+          github: "https://github.com/hervegerard-org/platform",
+        },
+        {
+          id: "raf-ferme",
+          name: "raf-ferme",
+          purpose:
+            "Gestion de stages : participants, inscriptions, paiements, présences.",
+          path: "/Users/Herve/Library/Mobile Documents/com~apple~CloudDocs/Development/raf-ferme",
+          cluster: "modern",
+          github: "https://github.com/hervegerard-org/raf-ferme",
+          upgradePrompt: `Tu travailles sur raf-ferme (SPA React + Vite + Supabase).
+
+État actuel : React 19.2, Vite 8, TS 6, TW 4, RR 7, Query 5, RHF+zod 4, Vitest. Node 24 ALIGNÉ.
+GitHub : déjà hervegerard-org/raf-ferme.
+CI : déjà caller ${PLATFORM_REPO}${PLATFORM_PIN} (node-ci → db-push → edge invite-admin → vite-build htaccess-src=public/.htaccess.ovh → deploy-ovh-ftp /www/stages/). Dump → supabase-db-dump.
+
+Objectif : maintenance stack « ${TARGET_STACK} » + rester sur platform (ne pas réécrire les jobs en inline).
+
+À faire :
+1. Bumps patch/minor front ; garder React 19 / Vite 8 / TW 4 / zod 4 / Node 24.
+2. \`npm run build\` + \`npm test\` + \`types:gen\`.
+3. Ne pas bumper checkout/setup-node/FTP ici — ça vit dans platform.
+4. Si le FTP a supprimé .htaccess : corriger platform vite-build.yml (upload-artifact include-hidden-files: true), retagger v1, re-deploy. En attendant restorer public/.htaccess.ovh → /www/stages/.htaccess.
+
+Forms :
+${FORMS_STANDARD}
+Déjà aligné : 7/7 forms zodResolver + shadcn Form, schémas dans src/lib/validators.ts.
+Optionnel : API Zod 4 (z.email() à la place de z.string().email()) ; retirer aliases dépréciés dans validators.ts.
+Ne pas changer le pattern shadcn Form.
+
+Contraintes : pas de secrets ; commits seulement si demandé.`,
+        },
+        {
+          id: "ebrius",
+          name: "Ebrius",
+          purpose: "SPA staffing / planning.",
+          path: "/Users/Herve/Development_Local/Ebrius/ebrius",
+          cluster: "modern",
+          upgradePrompt: `Tu travailles sur Ebrius (\`apps/web\` + \`supabase/\`).
+
+État actuel : React 19.2, Vite 8, TS 6, TW 4, RR 7, Query 5, RHF+zod 4, oxlint, PWA. Node 24 ALIGNÉ. GitHub : hervegerard-org/ebrius. CI : deploy.yml caller platform@v1.
+CI : deploy.yml inline (jobs supabase ∥ web). Pins checkout/setup-node@v5, supabase@v3, FTP@v4.4.0 déjà OK.
+Node : pin CI / .nvmrc 22.23.4 (CVE-2026-111497). Secrets : OVH_FTP_* , SUPABASE_PROJECT_ID, VITE_*.
+Remote actuel : probablement hors hervegerard-org.
+
+Deux cibles : stack « ${TARGET_STACK} » + caller ${PLATFORM_REPO}${PLATFORM_PIN}.
+
+${TRANSFER_ORG}
+
+${PLATFORM_WORKFLOWS}
+
+À faire (ordre) :
+1. Transférer le repo vers hervegerard-org, mettre à jour origin.
+2. Node 22 → 24 : ${NODE_TARGET} (fichier .nvmrc à la racine ou apps/web — cohérent avec cache-dependency-path).
+3. Remplacer deploy.yml par des jobs uses (triggers push main + workflow_dispatch inchangés) :
+   - node-ci : working-directory apps/web, cache-dependency-path apps/web/package-lock.json, run-lint false (oxlint), run-test false tant que pas de Vitest, run-build true
+   - supabase-db-push (mapper SUPABASE_PROJECT_ID → SUPABASE_PROJECT_REF ; fournir SUPABASE_DB_HOST si besoin --db-url, sinon STOP et documenter l’écart vs link)
+   - supabase-edge-deploy functions: invite-user,delete-user ; working-directory à la racine supabase/
+   - vite-build : working-directory apps/web, dist-dir dist
+   - deploy-ovh-ftp : local-dir apps/web/dist/ (ou dist/ si artifact extraite à dist), server-dir www/ebrius/, use-artifact true
+   Mapper OVH_FTP_HOST/USER/PASSWORD → FTP_SERVER/USERNAME/PASSWORD.
+4. Ajouter Vitest smoke sur apps/web si simple.
+5. \`npm run build\` + \`db:types\` sous Node 24.
+6. Ne plus bumper les actions dans ce repo.
+
+Forms :
+${FORMS_STANDARD}
+Déjà aligné : 5 forms métier zodResolver + register() + z.email(). Laisser les 3 mini-forms natifs. Ne pas introduire shadcn Form.
+
+Contraintes : garder oxlint ; pas de secrets en clair ; commits seulement si demandé.`,
+        },
+        {
+          id: "emulatio",
+          name: "Emulatio",
+          purpose: "Repérage de décors multi-tenant.",
+          path: "/Users/Herve/Development_Local/Emulatio/emulatio",
+          cluster: "complex",
+          upgradePrompt: `Tu travailles sur Emulatio (\`apps/web\` + \`supabase/\` + \`services/embed-api\`).
+
+État actuel : React 19.2 / Vite 8 / TW 4 / RR 7 / Query 5, RHF+zod 4 en deps, 0 import (useState), Vitest. Node 24 ALIGNÉ. CI : callers platform@v1. Remote : Emulatio (pas org).
+CI : deploy-ovh.yml (SFTP wlixcc@v1.2.5, path guard, checkout/setup @v4) + deploy-supabase.yml (dispatch, setup-cli@v1).
+Secrets : OVH_SFTP_* , VITE_* + Google Maps. Platform v1 = FTP SamKirkland seulement (pas SFTP).
+
+Deux cibles : stack « ${TARGET_STACK} » + caller ${PLATFORM_REPO}${PLATFORM_PIN}.
+
+${TRANSFER_ORG}
+
+${PLATFORM_WORKFLOWS}
+
+À faire (ordre) :
+1. Transférer vers hervegerard-org + remote origin.
+2. Node 24 : ${NODE_TARGET} ; Python 3.11+ inchangé (jobs embed-api restent locaux).
+3. Remplacer deploy-ovh.yml par vite-build (apps/web, env VITE_GOOGLE_MAPS_* en plus si le reusable ne les a pas : garder un job build local SEULEMENT pour ces extra env, sinon proposer un input platform) + deploy-ovh-ftp.
+   server-dir = dossier emulatio (ex. www/emulatio/). Mapper OVH_SFTP_HOST/USER/PASSWORD → FTP_* si le compte OVH accepte FTP. Conserver un job local de validation de chemin (path guard) AVANT le uses ftp si besoin.
+   Si FTP impossible : garder SFTP en job local et n’appeler platform que pour node-ci / supabase — documenter la dérogation.
+4. Remplacer deploy-supabase.yml par supabase-db-push + supabase-edge-deploy (functions = toutes ; CSV). Mapper SUPABASE_PROJECT_ID → SUPABASE_PROJECT_REF.
+5. Optionnel : Vitest smoke. Pas de PWA sauf demandé.
+6. Ne plus bumper checkout@v4 / setup-cli@v1 dans ce repo.
+
+Forms :
+${FORMS_STANDARD}
+Brancher Login + DemandeAcces + DecorCreate/Edit + Proposer (zodResolver + z.email(), style Ebrius). Interdit de laisser zod / RHF / @hookform/resolvers morts. Zod 4 est déjà en deps — ne pas « migrer 3 → 4 ».
+
+Contraintes : ne pas casser i18n / Maps / PDF / embed-api ; pas de secrets ; commits seulement si demandé.`,
+        },
+        {
+          id: "atelier-int",
+          name: "atelier-int",
+          purpose:
+            "Desize — projets d’aménagement intérieur (CRM / atelier). Workspace multi-root : atelier-int + atelier-int-brain + optimization.",
+          path: "/Users/Herve/Library/Mobile Documents/com~apple~CloudDocs/Development/Github/atelier-int.code-workspace",
+          cluster: "complex",
+          upgradePrompt: `Tu travailles sur atelier-int (Desize) — gros monolithe Vite + Supabase.
+
+État actuel : React 19.2 / Vite 8 / TW 4 / RR 7 / Query 5 / RHF sans zod. Node CI / .nvmrc 22.23.4.
+CI : 16 workflows (promote lftp, migra, SketchUp, dump multi-env…). checkout/setup @v6 OK ; supabase/setup-cli @v2 → v3.
+Compte / org : hervedezisebe / Desize — 2 devs. NE PAS transférer vers hervegerard-org.
+
+Cible stack : « ${TARGET_STACK} ».
+Platform : ${PLATFORM_REPO} est PRIVATE → inappelable hors org. Ne PAS ajouter uses: ${PLATFORM_REPO}/... tant que platform n’est pas publique. Pas de duplication des YAML platform dans ce repo.
+
+À faire :
+1. Node déjà à 22.23.4 (CVE-2026-111497) ; migration optionnelle vers 24.22.1 : ${NODE_TARGET} via \`.nvmrc\`.
+2. Remplacer supabase/setup-cli@v2 → @v3 là où utilisé. Ne pas downgrader checkout/setup @v6.
+3. Bumps patch/minor front ; \`npm run build\` + \`test:unit\` sous Node 24.
+4. Garder promote.yml / migra / buckets / auth / CRM eval / SketchUp en local (classe C).
+5. dump : rester local (multi-env) ; plus tard wrapper si platform devient publique.
+6. Ne pas remplacer le SW custom sans plan dédié.
+
+Forms :
+${FORMS_STANDARD}
+Ajouter zod 4. Brancher ProjectLinkModal + DocumentModal via zodResolver. Soit importer components/ui/form.tsx, soit le supprimer (et @hookform/resolvers s’il reste idle). Pas de migration ComponentForm / ProjectForm dans ce prompt.
+
+Contraintes : surface large → changements minimaux ; pas de secrets ; commits seulement si demandé.`,
+        },
+        {
+          id: "grange-dauphin",
+          name: "grange-dauphin-planner",
+          purpose: "Planner / activités Grange Dauphin (origine Lovable).",
+          path: "/Users/Herve/Library/Mobile Documents/com~apple~CloudDocs/Development/Github/grange-dauphin-planner",
+          cluster: "debt",
+          upgradePrompt: `Tu travailles sur grange-dauphin-planner (origine Lovable) — PRIORITÉ HAUTE.
+
+État actuel : React 19.2, Vite 8, TS 6, TW 4, RR 7, Query 5, RHF+zod 4 en deps, 0 import. Node 24 ALIGNÉ. CI : build.yml inline (pas platform). Remote : hervegerard.
+CI : build.yml checkout/setup @v4 + sshpass SFTP vers /home/herveger/www/grange (main=dev même remote). Secrets FTP_* (misnommés pour SFTP).
+
+Deux cibles : stack « ${TARGET_STACK} » + caller ${PLATFORM_REPO}${PLATFORM_PIN}.
+
+${TRANSFER_ORG}
+
+${PLATFORM_WORKFLOWS}
+
+Plan (étapes) :
+1. Transférer vers hervegerard-org + origin.
+2. Node 22 → 24 : retirer engines \`<23\` — ${NODE_TARGET}.
+3. Vite 5 → 8 ; React 18 → 19 ; RR 6 → 7 ; TW 3 → 4 ; TS → 6 ; brancher Zod 4 déjà présent ; Vitest → 4.
+4. Remplacer build.yml sshpass par :
+   - node-ci (lint/test/build selon scripts existants)
+   - vite-build (htaccess si _htaccess / .htaccess présent)
+   - deploy-ovh-ftp server-dir correspondant à www/grange (confirmer le chemin OVH). use-artifact true.
+   Passer de SFTP sshpass à FTP SamKirkland (même compte OVH). Printful proxy inchangé.
+5. \`npm run build\` + \`npm test\` verts.
+6. Ne plus installer sshpass dans la CI.
+
+Forms :
+${FORMS_STANDARD}
+Premier pas : Login + ReservationForm.tsx (zodResolver). Sinon retirer zod / resolvers / form.tsx mort. Interdit de rester à mi-chemin.
+
+Contraintes : ne pas casser Lovable/hébergement ; pas de secrets ; commits seulement si demandé.`,
+        },
+        {
+          id: "artitemps",
+          name: "artiTemps",
+          purpose: "Réparations, caisse, facturation, SMS (atelier / boutique).",
+          path: "/Users/Herve/Development_Local/artiTemps.cursor",
+          cluster: "outlier",
+          upgradePrompt: `Tu travailles sur artiTemps (\`frontend/\` + \`api/\` PHP). NE PAS migrer vers Supabase.
+
+État actuel : React 19.1, Vite 7, TS 5.8, TW 3 ; CI Node 19 EOL.
+CI : deploy-full / deploy / deploy-api-only. FTP SamKirkland @v4.3.x → /www/v2/ + /www/api/. Secrets FTP_HOST (≠ FTP_SERVER). Change-detect frontend/api.
+
+Deux cibles : stack front « ${TARGET_STACK} » + FE sur ${PLATFORM_REPO}${PLATFORM_PIN}. API PHP reste locale.
+
+${TRANSFER_ORG}
+
+${PLATFORM_WORKFLOWS}
+
+À faire :
+1. Transférer vers hervegerard-org + origin (prépare le partage collab plus tard).
+2. Node 19 → 24 : ${NODE_TARGET} (frontend). PHP 8.1+ inchangé.
+3. frontend : Vite 7 → 8, TS → 6, TW 3 → 4. Optionnel TanStack Query.
+4. Remplacer la partie FRONT des workflows par :
+   - node-ci working-directory frontend/
+   - vite-build working-directory frontend/ (SW custom : ne pas casser)
+   - deploy-ovh-ftp server-dir /www/v2/ ; mapper FTP_HOST → FTP_SERVER
+5. Garder deploy-api-only (Composer, excludes vendor, FTP /www/api/) EN LOCAL — pas dans platform v1.
+6. Simplifier deploy-full : jobs uses FE + job local API. Conserver change-detect si utile (job local).
+7. API PHP : bumps Composer patch/minor ; PHPUnit vert.
+
+Forms :
+${FORMS_STANDARD}
+Ajouter zod 4 + @hookform/resolvers. Brancher les 3 RHF existants (ReparationEditModal, NwlCreateModal, Clients). form.tsx : utiliser ou supprimer. Caisse / login / facture : 2e passe, hors ce prompt.
+
+Contraintes : architecture PHP/MySQL/OVH inchangée ; pas de secrets ; commits seulement si demandé.`,
+        },
+      ];
+
+      function cursorHref(absPath) {
+        return "cursor://file" + encodeURI(absPath) + "?windowId=_blank";
+      }
+
+      function shortPath(absPath) {
+        return absPath.replace(/^\/Users\/Herve/, "~");
+      }
+
+      const grid = document.getElementById("grid");
+
+      for (const project of PROJECTS) {
+        const article = document.createElement("article");
+
+        const actions = document.createElement("div");
+        actions.className = "actions";
+
+        const open = document.createElement("a");
+        open.className = "btn primary";
+        open.href = cursorHref(project.path);
+        open.textContent = "Ouvrir dans Cursor";
+        actions.appendChild(open);
+
+        if (project.upgradePrompt) {
+          const copy = document.createElement("button");
+          copy.type = "button";
+          copy.className = "btn";
+          copy.textContent = "Copier le prompt d’adoption";
+          copy.addEventListener("click", async () => {
+            try {
+              await navigator.clipboard.writeText(project.upgradePrompt);
+            } catch {
+              const ta = document.createElement("textarea");
+              ta.value = project.upgradePrompt;
+              document.body.appendChild(ta);
+              ta.select();
+              document.execCommand("copy");
+              ta.remove();
+            }
+            copy.textContent = "Prompt copié";
+            setTimeout(() => {
+              copy.textContent = "Copier le prompt d’adoption";
+            }, 1600);
+          });
+          actions.appendChild(copy);
+        }
+
+        if (project.github) {
+          const gh = document.createElement("a");
+          gh.className = "btn";
+          gh.href = project.github;
+          gh.target = "_blank";
+          gh.rel = "noreferrer";
+          gh.textContent = "GitHub";
+          actions.appendChild(gh);
+        }
+
+        article.innerHTML = `
+          <span class="pill ${project.cluster}">${CLUSTER_LABEL[project.cluster]}</span>
+          <h2>${project.name}</h2>
+          <p class="purpose">${project.purpose}</p>
+          <p class="path">${shortPath(project.path)}</p>
+        `;
+        article.appendChild(actions);
+        grid.appendChild(article);
+      }
+
+      const copyScaffold = document.getElementById("copy-scaffold");
+      if (copyScaffold) {
+        copyScaffold.addEventListener("click", async () => {
+          try {
+            await navigator.clipboard.writeText(SCAFFOLD_PROMPT);
+          } catch {
+            const ta = document.createElement("textarea");
+            ta.value = SCAFFOLD_PROMPT;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand("copy");
+            ta.remove();
+          }
+          copyScaffold.textContent = "Prompt copié";
+          setTimeout(() => {
+            copyScaffold.textContent = "Copier le prompt wizard";
+          }, 1600);
+        });
+      }
+    </script>
+  </body>
+</html>

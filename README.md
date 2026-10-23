@@ -52,8 +52,11 @@ jobs:
 
 ## Docs
 
+- [Workspace launcher](home.html) — ouvrir les 7 projets dans une nouvelle fenêtre Cursor (`file:///Users/Herve/Development_Local/Platform/home.html`)
+- [Scaffold wizard](docs/scaffold.md) — prompt à coller dans un **autre** workspace pour créer une app sur la même base (React simple / React app / React + Supabase)
 - [Secret contract](docs/secrets.md)
 - [Adoption checklist](docs/adoption.md)
+- [Stack comparison canvas](canvases/stack-comparison.canvas.tsx) — inventaire 6 projets + prompts d’adoption + wizard nouveau projet (ouvrir le workspace Platform dans Cursor pour la vue live)
 
 ## Versioning
 
